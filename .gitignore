@@ -1,0 +1,13 @@
+# Executables
+allocate
+
+# Build output
+*.o
+
+# Temporary files
+*.swp
+*~
+*.bak
+*.tmp
+*.log
+.DS_Store
