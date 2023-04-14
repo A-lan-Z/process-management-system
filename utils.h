@@ -29,7 +29,6 @@ typedef struct Queue {
     Process **process_array;
     int front;
     int rear;
-    int max_size;
 } Queue;
 
 /* Data structure to simulate memory blocks */
@@ -41,6 +40,13 @@ typedef struct MemoryBlock {
     int process_id;
 } MemoryBlock;
 
+/* Data structure to simulate memory system */
+typedef struct Memory {
+    int size;
+    int remaining_size;
+    MemoryBlock **block_array;
+} Memory;
+
 /* Data structure to store command line arguments */
 typedef struct Arguments{
     char *filename;
@@ -49,8 +55,17 @@ typedef struct Arguments{
     int quantum;
 } Arguments;
 
+/* Initialise a queue and allocate memory */
+Queue *init_queue(int num_processes);
+
+/* Enqueue a process to the end of the queue */
+void enqueue(Queue *queue, Process *process);
+
+/* Dequeue the first process from the input queue */
+Process *pop(Queue *ready_queue);
+
 /* Helper function to read input into correct format */
-void read_input(const char *file_path, Process **input_queue_ptr);
+int read_input(const char *file_path, Process **input_queue_ptr);
 
 /* Helper function to parse command line arguments */
 void parse_arg(int argc, char **argv, Arguments *args);
