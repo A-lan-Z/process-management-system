@@ -12,9 +12,9 @@ int main(int argc, char **argv) {
     /**                              Input Handling                                **/
     /********************************************************************************/
     Arguments args;
-    Process *input_queue = NULL;
+    Process *processes = NULL;
     parse_arg(argc, argv, &args);
-    int num_processes = read_input(args.filename, &input_queue);
+    int num_processes = read_input(args.filename, &processes);
 
     printf("Filename: %s\n", args.filename);
     printf("Scheduler: %s\n", args.scheduler);
@@ -24,20 +24,19 @@ int main(int argc, char **argv) {
     // Print out the processes to check the correctness of read_input
 
     for (int i = 0; i < num_processes; i++) {
-        printf("Process Name: %s\n", input_queue[i].process_name);
-        printf("Arrival Time: %d\n", input_queue[i].arrival_time);
-        printf("Service Time: %d\n", input_queue[i].service_time);
-        printf("Memory Required: %d\n", input_queue[i].memory_required);
-        printf("Remaining Time: %d\n", input_queue[i].remaining_time);
+        printf("Process Name: %s\n", processes[i].process_name);
+        printf("Arrival Time: %d\n", processes[i].arrival_time);
+        printf("Service Time: %d\n", processes[i].service_time);
+        printf("Memory Required: %d\n", processes[i].memory_required);
+        printf("Remaining Time: %d\n", processes[i].remaining_time);
     }
     printf("\n\n\n\n");
 
     /********************************************************************************/
     /**                               Simulate SJF                                 **/
     /********************************************************************************/
-    simulate_SJF(input_queue, num_processes);
-
-
+    int makespan = simulate_SJF(processes, num_processes);
+    performance_matrix(processes, num_processes, makespan);
 
     return 0;
 }

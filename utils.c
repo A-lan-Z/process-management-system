@@ -3,9 +3,6 @@
 //
 
 #include "utils.h"
-#include <stdio.h>
-#include <stdlib.h>
-
 
 /* Initialise a queue and allocate memory */
 Queue *init_queue(int num_processes) {
@@ -42,7 +39,7 @@ Process *pop(Queue *ready_queue) {
 }
 
 /* Helper function to read input into correct format */
-int read_input(const char *file_path, Process **input_queue_ptr) {
+int read_input(const char *file_path, Process **Processes_ptr) {
     // Check validity of input file
     FILE *file = fopen(file_path, "r");
     if (!file) {
@@ -51,25 +48,25 @@ int read_input(const char *file_path, Process **input_queue_ptr) {
     }
 
     // Allocate memory for input queue
-    *input_queue_ptr = NULL;
-    int input_queue_size = 0;
+    *Processes_ptr = NULL;
+    int num_processes = 0;
 
     // Read process data from the input file into the input queue
     while (!feof(file)) {
         Process p;
         if (fscanf(file, "%d%s%d%d", &p.arrival_time, p.process_name, &p.service_time, &p.memory_required) == 4) {
             p.remaining_time = p.service_time;
-            *input_queue_ptr = realloc(*input_queue_ptr, (input_queue_size + 1) * sizeof(Process));
-            if (!(*input_queue_ptr)) {
+            *Processes_ptr = realloc(*Processes_ptr, (num_processes + 1) * sizeof(Process));
+            if (!(*Processes_ptr)) {
                 perror("Error allocating memory for input queue");
                 exit(EXIT_FAILURE);
             }
-            (*input_queue_ptr)[input_queue_size++] = p;
+            (*Processes_ptr)[num_processes++] = p;
         }
     }
 
     fclose(file);
-    return input_queue_size;
+    return num_processes;
 }
 
 /* Helper function to parse command line arguments */
@@ -98,4 +95,28 @@ void parse_arg(int argc, char **argv, Arguments *args) {
         fprintf(stderr, "Usage: %s -f <filename> -s (SJF | RR) -m (infinite | best-fit) -q (1 | 2 | 3)\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+}
+
+/* Helper function to print performance matrix */
+void performance_matrix(Process *processes, int num_processes, int makespan) {
+    double total_turnaround_time = 0;
+    double total_overhead = 0;
+    double max_overhead = 0;
+
+    for (int i = 0; i < num_processes; i++) {
+        int turnaround_time = processes[i].completion_time - processes[i].arrival_time;
+        double overhead = (double)turnaround_time / processes[i].service_time;
+        total_turnaround_time += turnaround_time;
+        total_overhead += overhead;
+
+        if (overhead > max_overhead) {
+            max_overhead = overhead;
+        }
+    }
+    int avg_turnaround_time = (int)((total_turnaround_time + num_processes - 1) / num_processes);
+    double avg_overhead = total_overhead / num_processes;
+
+    printf("Turnaround time %d\n", avg_turnaround_time);
+    printf("Time overhead %.2f %.2f\n", max_overhead, avg_overhead);
+    printf("Makespan %d\n", makespan);
 }

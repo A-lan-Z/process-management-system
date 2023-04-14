@@ -16,7 +16,6 @@ typedef struct Process {
     char process_name[MAX_PROCESS_NAME_LEN];
     int arrival_time;
     int service_time;
-    int priority;
     int remaining_time;
     int completion_time;
     int memory_required;
@@ -65,9 +64,12 @@ void enqueue(Queue *queue, Process *process);
 Process *pop(Queue *ready_queue);
 
 /* Helper function to read input into correct format */
-int read_input(const char *file_path, Process **input_queue_ptr);
+int read_input(const char *file_path, Process **Processes_ptr);
 
 /* Helper function to parse command line arguments */
 void parse_arg(int argc, char **argv, Arguments *args);
+
+/* Helper function to print performance matrix */
+void performance_matrix(Process *processes, int num_processes, int makespan);
 
 #endif //COMP30023_2023_PROJECT_1_UTILS_H

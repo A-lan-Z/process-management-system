@@ -42,37 +42,45 @@ void insert_process_SJF(Queue *ready_queue, Process *process) {
 
 
 // Simulate the Shortest Job First algorithm
-void simulate_SJF(Process *input_queue, int num_processes) {
+int simulate_SJF(Process *processes, int num_processes) {
+    Queue *input_queue = init_queue(num_processes);
     Queue *ready_queue = init_queue(num_processes);
     int curr_time = 0;
     int completed_processes = 0;
     int last_arrival_index = 0;
+    Process *running_process = NULL;
 
     // Continue processing until all processes are completed
     while (completed_processes < num_processes) {
-        // Add process that has arrived before current time to ready state
-        Process *x = &input_queue[last_arrival_index];
-        while (last_arrival_index < num_processes && input_queue[last_arrival_index].arrival_time <= curr_time) {
-            printf("%d,READY,process_name=%s\n", curr_time, input_queue[last_arrival_index].process_name);
-            insert_process_SJF(ready_queue, &input_queue[last_arrival_index]);
+
+        // Identify whether the currently running process (if any) has completed.
+        if (running_process != NULL && running_process->remaining_time <= 0) {
+            // Terminate and deallocate memory
+            running_process->completion_time = curr_time;
+            completed_processes++;
+            printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, running_process->process_name, last_arrival_index - completed_processes);
+            running_process = NULL;
+        }
+
+        // Add all arrived process to input queue
+        while (last_arrival_index < num_processes && processes[last_arrival_index].arrival_time <= curr_time) {
+            enqueue(input_queue, &processes[last_arrival_index]);
+            // Allocate memory to processes in input queue directly
+            insert_process_SJF(ready_queue, &processes[last_arrival_index]);
             last_arrival_index++;
         }
-        if (ready_queue->front <= ready_queue->rear) {
-            // There are remaining processes in ready queue, pop the shortest job
-            Process *shortest = pop(ready_queue);
-            // Simulate process completed, update process info
-            printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, shortest->process_name, shortest->service_time);
-            curr_time += shortest->service_time;
-            shortest->completion_time = curr_time;
-            shortest->remaining_time = 0;
-            completed_processes++;
-            printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, shortest->process_name, num_processes - completed_processes);
 
-        } else {
-            // There are remaining processes but are not added to ready queue yet
-            curr_time++;
+        // Resume the previously running process or a new READY process
+        if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
+            running_process = pop(ready_queue);
+            printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name, running_process->remaining_time);
         }
+        if (running_process != NULL) {
+            running_process->remaining_time--;
+        }
+        curr_time++;
     }
     free(ready_queue->process_array);
+    return curr_time-1;
 }
 
