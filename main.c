@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     /********************************************************************************/
     /**                               Simulate SJF                                 **/
     /********************************************************************************/
-    int makespan = simulate_SJF(processes, num_processes);
+    int makespan = simulate_SJF(processes, num_processes, args.quantum);
     performance_matrix(processes, num_processes, makespan);
 
     return 0;

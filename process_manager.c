@@ -29,7 +29,7 @@ void insert_process_SJF(Queue *ready_queue, Process *process) {
             }
             // If equal arrival time, insert in ascending order of process name
             if (curr_process->arrival_time == process->arrival_time) {
-                if (strcmp(curr_process->process_name, process->process_name)) {
+                if (strcmp(curr_process->process_name, process->process_name) < 0) {
                     break;
                 }
             }
@@ -42,7 +42,7 @@ void insert_process_SJF(Queue *ready_queue, Process *process) {
 
 
 // Simulate the Shortest Job First algorithm
-int simulate_SJF(Process *processes, int num_processes) {
+int simulate_SJF(Process *processes, int num_processes, int quantum) {
     Queue *input_queue = init_queue(num_processes);
     Queue *ready_queue = init_queue(num_processes);
     int curr_time = 0;
@@ -53,34 +53,39 @@ int simulate_SJF(Process *processes, int num_processes) {
     // Continue processing until all processes are completed
     while (completed_processes < num_processes) {
 
-        // Identify whether the currently running process (if any) has completed.
-        if (running_process != NULL && running_process->remaining_time <= 0) {
-            // Terminate and deallocate memory
-            running_process->completion_time = curr_time;
-            completed_processes++;
-            printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, running_process->process_name, last_arrival_index - completed_processes);
-            running_process = NULL;
+        // Perform the following tasks only at the start of each cycle
+        if (!(curr_time % quantum)) {
+            // Identify whether the currently running process (if any) has completed.
+            if (running_process != NULL && running_process->remaining_time <= 0) {
+                // Terminate and deallocate memory
+                running_process->completion_time = curr_time;
+                completed_processes++;
+                printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, running_process->process_name, last_arrival_index - completed_processes);
+                running_process = NULL;
+            }
+
+            // Add all arrived process to input queue
+            while (last_arrival_index < num_processes && processes[last_arrival_index].arrival_time <= curr_time) {
+                enqueue(input_queue, &processes[last_arrival_index]);
+                // Allocate memory to processes in input queue directly
+                insert_process_SJF(ready_queue, &processes[last_arrival_index]);
+                last_arrival_index++;
+            }
+
+            // Resume the previously running process or start a new READY process
+            if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
+                running_process = pop(ready_queue);
+                printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name, running_process->remaining_time);
+            }
         }
 
-        // Add all arrived process to input queue
-        while (last_arrival_index < num_processes && processes[last_arrival_index].arrival_time <= curr_time) {
-            enqueue(input_queue, &processes[last_arrival_index]);
-            // Allocate memory to processes in input queue directly
-            insert_process_SJF(ready_queue, &processes[last_arrival_index]);
-            last_arrival_index++;
-        }
-
-        // Resume the previously running process or a new READY process
-        if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
-            running_process = pop(ready_queue);
-            printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name, running_process->remaining_time);
-        }
+        // Resume the previously running process
         if (running_process != NULL) {
             running_process->remaining_time--;
         }
         curr_time++;
     }
     free(ready_queue->process_array);
-    return curr_time-1;
+    return curr_time - 1;
 }
 
