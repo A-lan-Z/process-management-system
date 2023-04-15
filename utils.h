@@ -64,7 +64,7 @@ void enqueue(Queue *queue, Process *process);
 Process *pop(Queue *ready_queue);
 
 /* Helper function to read input into correct format */
-int read_input(const char *file_path, Process **Processes_ptr);
+int read_input(const char *file_path, Process **processes_ptr);
 
 /* Helper function to parse command line arguments */
 void parse_arg(int argc, char **argv, Arguments *args);

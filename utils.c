@@ -7,9 +7,13 @@
 /* Initialise a queue and allocate memory */
 Queue *init_queue(int num_processes) {
     Queue *queue = malloc(sizeof(Queue));
-    queue->process_array = malloc(num_processes * sizeof(Process *));
-    if (!queue || !queue->process_array) {
+    if (!queue) {
         perror("Error allocating memory for queue");
+        exit(EXIT_FAILURE);
+    }
+    queue->process_array = malloc(num_processes * sizeof(Process *));
+    if (!queue->process_array) {
+        perror("Error allocating memory for process array");
         exit(EXIT_FAILURE);
     }
     queue->front = -1;
@@ -39,7 +43,7 @@ Process *pop(Queue *ready_queue) {
 }
 
 /* Helper function to read input into correct format */
-int read_input(const char *file_path, Process **Processes_ptr) {
+int read_input(const char *file_path, Process **processes_ptr) {
     // Check validity of input file
     FILE *file = fopen(file_path, "r");
     if (!file) {
@@ -48,7 +52,7 @@ int read_input(const char *file_path, Process **Processes_ptr) {
     }
 
     // Allocate memory for input queue
-    *Processes_ptr = NULL;
+    *processes_ptr = NULL;
     int num_processes = 0;
 
     // Read process data from the input file into the input queue
@@ -56,12 +60,12 @@ int read_input(const char *file_path, Process **Processes_ptr) {
         Process p;
         if (fscanf(file, "%d%s%d%d", &p.arrival_time, p.process_name, &p.service_time, &p.memory_required) == 4) {
             p.remaining_time = p.service_time;
-            *Processes_ptr = realloc(*Processes_ptr, (num_processes + 1) * sizeof(Process));
-            if (!(*Processes_ptr)) {
+            *processes_ptr = realloc(*processes_ptr, (num_processes + 1) * sizeof(Process));
+            if (!(*processes_ptr)) {
                 perror("Error allocating memory for input queue");
                 exit(EXIT_FAILURE);
             }
-            (*Processes_ptr)[num_processes++] = p;
+            (*processes_ptr)[num_processes++] = p;
         }
     }
 
