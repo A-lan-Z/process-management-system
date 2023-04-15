@@ -77,22 +77,31 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
                 last_arrival_index++;
             }
 
-            // Attempt to allocate memory to all process in input queue
-            int input_queue_index = input_queue->front;
-            while (input_queue_index <= input_queue->rear) {
-                Process *candidate_process = input_queue->process_array[input_queue_index];
-                int alloc_address = best_fit_alloc(memory_blocks, candidate_process->memory_required);
+            if (is_best_fit) {
+                // Attempt to allocate memory to all process in input queue
+                int input_queue_index = input_queue->front;
+                while (input_queue_index <= input_queue->rear) {
+                    Process *candidate_process = input_queue->process_array[input_queue_index];
+                    int alloc_address = best_fit_alloc(&memory_blocks, candidate_process->memory_required);
 
-                // Add processes with memory allocated successfully to the ready queue
-                if (alloc_address != -1) {
-                    candidate_process->memory_start = alloc_address;
+                    // Add processes with memory allocated successfully to the ready queue
+                    if (alloc_address != -1) {
+                        candidate_process->memory_start = alloc_address;
+                        insert_process_SJF(ready_queue, candidate_process);
+                        printf("%d,READY,process_name=%s,assigned_at=%d\n", curr_time, candidate_process->process_name, alloc_address);
+                        dequeue(input_queue, input_queue_index);
+                    } else {
+                        input_queue_index++;
+                    }
+                }
+            } else {
+                // Move all processes in the input queue to the ready queue
+                while (input_queue->front <= input_queue->rear) {
+                    Process *candidate_process = pop(input_queue);
                     insert_process_SJF(ready_queue, candidate_process);
-                    dequeue(input_queue, input_queue_index);
-                } else {
-                    input_queue_index++;
+                    printf("%d,READY,process_name=%s,assigned_at=%d\n", curr_time, candidate_process->process_name, 0);
                 }
             }
-            insert_process_SJF(ready_queue, &processes[last_arrival_index]);
 
             // Start a new READY process if there are no running process
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {

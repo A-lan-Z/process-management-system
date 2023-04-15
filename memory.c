@@ -17,8 +17,8 @@ MemoryBlock *init_memory(int tot_mem_size) {
 
 
 /* Allocate memory of required size with best fit algorithm */
-int best_fit_alloc(MemoryBlock *memory_blocks, int memory_required) {
-    MemoryBlock *curr_block = memory_blocks;
+int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required) {
+    MemoryBlock *curr_block = *memory_blocks;
     MemoryBlock *best_fit_block = NULL;
 
     // Iterate through the entire memory to find the best fit block
@@ -57,6 +57,9 @@ int best_fit_alloc(MemoryBlock *memory_blocks, int memory_required) {
     // Update the previous and next block's pointers
     if (allocated_block->prev) {
         allocated_block->prev->next = allocated_block;
+    } else {
+        // There are no previous block, new head of list is allocated_block
+        *memory_blocks = allocated_block;
     }
     if (allocated_block->next) {
         allocated_block->next->prev = allocated_block;

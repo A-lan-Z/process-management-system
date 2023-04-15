@@ -21,7 +21,7 @@ typedef struct MemoryBlock {
 MemoryBlock *init_memory(int tot_mem_size);
 
 /* Allocate memory of required size with best fit algorithm */
-int best_fit_alloc(MemoryBlock *memory_blocks, int memory_required);
+int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required);
 
 /* Helper function to deallocate the block with input start address */
 void dealloc(MemoryBlock *memory_blocks, int start_address);
