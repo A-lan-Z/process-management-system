@@ -179,7 +179,7 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
         curr_time++;
     }
 
-// Free all used memory
+    // Free all used memory
     free(input_queue->process_array);
     free(ready_queue->process_array);
     free(input_queue);

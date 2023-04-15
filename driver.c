@@ -35,7 +35,9 @@ int main(int argc, char **argv) {
     }
     performance_matrix(processes, num_processes, makespan);
 
-    // Free the memory blocks linked list
+    // Free all used memory
     free(memory_blocks);
+    free(processes);
+
     return 0;
 }
