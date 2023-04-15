@@ -4,6 +4,7 @@
 
 #include "memory.h"
 
+
 /* Initialise memory system */
 MemoryBlock *init_memory(int tot_mem_size) {
     MemoryBlock *memory_blocks = (MemoryBlock *)malloc(sizeof(MemoryBlock));
@@ -16,9 +17,9 @@ MemoryBlock *init_memory(int tot_mem_size) {
 }
 
 
-/* Allocate memory of required size with best fit algorithm */
-int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required) {
-    MemoryBlock *curr_block = *memory_blocks;
+/* Find and return the best fit block in the entire memory */
+MemoryBlock *find_best_fit(MemoryBlock *memory_blocks, int memory_required) {
+    MemoryBlock *curr_block = memory_blocks;
     MemoryBlock *best_fit_block = NULL;
 
     // Iterate through the entire memory to find the best fit block
@@ -30,11 +31,27 @@ int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required) {
         }
         curr_block = curr_block->next;
     }
+    return best_fit_block;
+}
+
+
+/* Helper function to update the adjacent memory block pointers */
+void update_adj_blocks(MemoryBlock *memory_block) {
+    if (memory_block->prev) {
+        memory_block->prev->next = memory_block;
+    }
+    if (memory_block->next) {
+        memory_block->next->prev = memory_block;
+    }
+}
+
+
+/* Allocate memory of required size with best fit algorithm */
+int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required) {
+    MemoryBlock *best_fit_block = find_best_fit(*memory_blocks, memory_required);
 
     // Return fail if no suitable memory block found
-    if (!best_fit_block) {
-        return -1;
-    }
+    if (!best_fit_block) {return -1;}
 
     // Partition the best fit block to allocated block and remaining block
     MemoryBlock *allocated_block = (MemoryBlock *) malloc(sizeof(MemoryBlock));
@@ -55,17 +72,30 @@ int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required) {
     }
 
     // Update the previous and next block's pointers
-    if (allocated_block->prev) {
-        allocated_block->prev->next = allocated_block;
-    } else {
-        // There are no previous block, new head of list is allocated_block
+    update_adj_blocks(allocated_block);
+
+    // Update the head of list if required
+    if (!allocated_block->prev) {
         *memory_blocks = allocated_block;
-    }
-    if (allocated_block->next) {
-        allocated_block->next->prev = allocated_block;
     }
 
     return allocated_block->start_address;
+}
+
+
+/* Helper function to combine adjacent free blocks */
+void combine_adj_blocks(MemoryBlock **block_ptr_A, MemoryBlock **block_ptr_B) {
+    MemoryBlock *block_A = *block_ptr_A;
+    MemoryBlock *block_B = *block_ptr_B;
+
+    block_A->size += block_B->size;
+    block_A->next = block_B->next;
+
+    if (block_B->next) {
+        block_B->next->prev = block_A;
+    }
+    free(block_B);
+    *block_ptr_B = NULL;
 }
 
 
@@ -78,30 +108,14 @@ void dealloc(MemoryBlock *memory_blocks, int start_address) {
         if (curr_block->start_address == start_address) {
             curr_block->is_free = 1;
 
-            // Combine with previous free block if necessary
+            // Combine with adjacent free blocks if necessary
             if (curr_block->prev && curr_block->prev->is_free) {
                 MemoryBlock *prev_block = curr_block->prev;
-                prev_block->size += curr_block->size;
-                prev_block->next = curr_block->next;
-
-                if (curr_block->next) {
-                    curr_block->next->prev = prev_block;
-                }
-
-                free(curr_block);
+                combine_adj_blocks(&(curr_block->prev), &curr_block);
                 curr_block = prev_block;
             }
-
-            // Combine with next free block is necessary
             if (curr_block->next && curr_block->next->is_free) {
-                MemoryBlock *next_block = curr_block->next;
-                curr_block->size += next_block->size;
-                curr_block->next = next_block->next;
-
-                if (next_block->next) {
-                    next_block->next->prev = curr_block;
-                }
-                free(next_block);
+                combine_adj_blocks(&curr_block, &(curr_block->next));
             }
 
             // Exist function once memory is deallocated
