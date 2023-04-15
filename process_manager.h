@@ -13,9 +13,9 @@
 void insert_process_SJF(Queue *ready_queue, Process *process);
 
 // Simulate the Shortest Job First algorithm and return makespan
-int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock *memory_blocks, int is_best_fit);
+int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock **memory_blocks_ptr, int is_best_fit);
 
 // Simulate the Round Robin algorithm and return makespan
-int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock *memory_blocks, int is_best_fit);
+int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock **memory_blocks_ptr, int is_best_fit);
 
 #endif //COMP30023_2023_PROJECT_1_PROC_MAN_H

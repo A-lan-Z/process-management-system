@@ -29,11 +29,13 @@ int main(int argc, char **argv) {
     int is_SJF = strcmp(args.scheduler, "SJF") ? 0 : 1;
     int makespan;
     if (is_SJF) {
-        makespan = simulate_SJF(processes, num_processes, args.quantum, memory_blocks, is_best_fit);
+        makespan = simulate_SJF(processes, num_processes, args.quantum, &memory_blocks, is_best_fit);
     } else {
-        makespan = simulate_RR(processes, num_processes, args.quantum, memory_blocks, is_best_fit);
+        makespan = simulate_RR(processes, num_processes, args.quantum, &memory_blocks, is_best_fit);
     }
-
     performance_matrix(processes, num_processes, makespan);
+
+    // Free the memory blocks linked list
+    free(memory_blocks);
     return 0;
 }

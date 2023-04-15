@@ -98,7 +98,7 @@ void enqueue_ready_queue(Queue *input_queue, Queue *ready_queue, MemoryBlock **m
 
 
 /* Simulate the Shortest Job First algorithm and return makespan */
-int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock *memory_blocks, int is_best_fit) {
+int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock **memory_blocks_ptr, int is_best_fit) {
     int curr_time = 0;
     int completed_processes = 0;
     int last_arrival_index = 0;
@@ -111,9 +111,9 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
 
         // Perform the following tasks only at the start of each cycle
         if (!(curr_time % quantum)) {
-            terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, memory_blocks, is_best_fit);
+            terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr, is_best_fit);
             enqueue_input_queue(processes, num_processes, curr_time, &last_arrival_index, input_queue);
-            enqueue_ready_queue(input_queue, ready_queue, &memory_blocks, is_best_fit, curr_time, 1);
+            enqueue_ready_queue(input_queue, ready_queue, memory_blocks_ptr, is_best_fit, curr_time, 1);
 
             // Start a new READY process if there are no running process
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
@@ -128,7 +128,7 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
         }
         curr_time++;
     }
-    
+
     // Free all used memory
     free(input_queue->process_array);
     free(ready_queue->process_array);
@@ -139,7 +139,7 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
 
 
 /* Simulate the Round Robin algorithm and return makespan */
-int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock *memory_blocks, int is_best_fit) {
+int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock **memory_blocks_ptr, int is_best_fit) {
     int curr_time = 0;
     int completed_processes = 0;
     int last_arrival_index = 0;
@@ -152,9 +152,10 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
 
         // Perform the following tasks only at the start of each cycle
         if (!(curr_time % quantum)) {
-            terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, memory_blocks, is_best_fit);
+            terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr,
+                              is_best_fit);
             enqueue_input_queue(processes, num_processes, curr_time, &last_arrival_index, input_queue);
-            enqueue_ready_queue(input_queue, ready_queue, &memory_blocks, is_best_fit, curr_time, 0);
+            enqueue_ready_queue(input_queue, ready_queue, memory_blocks_ptr, is_best_fit, curr_time, 0);
 
             // If the process requires more CPU time and there are other READY processes, the process
             // is suspended and enters the READY state again to await more CPU time.
@@ -166,7 +167,8 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
             // Start a new READY process
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
                 running_process = pop(ready_queue);
-                printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name, running_process->remaining_time);
+                printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name,
+                       running_process->remaining_time);
             }
         }
 
@@ -177,7 +179,7 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
         curr_time++;
     }
 
-    // Free all used memory
+// Free all used memory
     free(input_queue->process_array);
     free(ready_queue->process_array);
     free(input_queue);
