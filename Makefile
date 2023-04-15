@@ -1,15 +1,15 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-OBJFILES = main.o utils.o process_manager.o memory.o
+OBJFILES = driver.o utils.o process_manager.o memory.o
 
 all: allocate
 
 allocate: $(OBJFILES)
 	$(CC) $(CFLAGS) -o allocate $(OBJFILES)
 
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c
+main.o: driver.c
+	$(CC) $(CFLAGS) -c driver.c
 
 utils.o: utils.c
 	$(CC) $(CFLAGS) -c utils.c
