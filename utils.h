@@ -54,6 +54,9 @@ typedef struct Arguments{
     int quantum;
 } Arguments;
 
+/* Custom round-half-up function */
+double round_half_up(double num, int precision);
+
 /* Initialise a queue and allocate memory */
 Queue *init_queue(int num_processes);
 

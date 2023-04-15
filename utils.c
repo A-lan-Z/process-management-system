@@ -4,6 +4,16 @@
 
 #include "utils.h"
 
+/* Custom round-half-up function */
+double round_half_up(double num, int precision) {
+    double factor = 1;
+    for (int i = 0; i < precision; i++) {
+        factor *= 10;
+    }
+
+    return (int)(num * factor + 0.5) / factor;
+}
+
 /* Initialise a queue and allocate memory */
 Queue *init_queue(int num_processes) {
     Queue *queue = malloc(sizeof(Queue));
@@ -119,6 +129,11 @@ void performance_matrix(Process *processes, int num_processes, int makespan) {
     }
     int avg_turnaround_time = (int)((total_turnaround_time + num_processes - 1) / num_processes);
     double avg_overhead = total_overhead / num_processes;
+
+    // Round half up to 2 decimal points
+    max_overhead = round_half_up(max_overhead, 2);
+    avg_overhead = round_half_up(avg_overhead, 2);
+
 
     printf("Turnaround time %d\n", avg_turnaround_time);
     printf("Time overhead %.2f %.2f\n", max_overhead, avg_overhead);
