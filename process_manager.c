@@ -43,7 +43,61 @@ void insert_process_SJF(Queue *ready_queue, Process *process) {
 }
 
 
-// Simulate the Shortest Job First algorithm and return makespan
+/* Enqueue processes that have arrived to input queue */
+void enqueue_input_queue(Process *processes, int num_processes, int curr_time, int *last_arrival_index, Queue *input_queue) {
+    while (*last_arrival_index < num_processes && processes[*last_arrival_index].arrival_time <= curr_time) {
+        enqueue(input_queue, &processes[*last_arrival_index]);
+        (*last_arrival_index)++;
+    }
+}
+
+
+/* Terminate process and deallocate memory when completed */
+void terminate_process(Process **running_process, int curr_time, int last_arrival_index, int *completed_processes, MemoryBlock *memory_blocks, int is_best_fit) {
+    if (*running_process != NULL && (*running_process)->remaining_time <= 0) {
+        // Terminate and deallocate memory
+        (*running_process)->completion_time = curr_time;
+        (*completed_processes)++;
+        printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, (*running_process)->process_name, last_arrival_index - *completed_processes);
+
+        // Deallocate memory
+        if (is_best_fit) {
+            dealloc(memory_blocks, (*running_process)->memory_start);
+        }
+        *running_process = NULL;
+    }
+}
+
+
+/* Enqueue processes with successful memory allocation to ready queue */
+void enqueue_ready_queue(Queue *input_queue, Queue *ready_queue, MemoryBlock **memory_blocks_ptr, int is_best_fit, int curr_time, int is_SJF) {
+    // Best fit algorithm required, attempt to allocate memory to all process in input queue
+    int input_queue_index = input_queue->front;
+    while (input_queue_index <= input_queue->rear) {
+        Process *candidate_process = input_queue->process_array[input_queue_index];
+        int alloc_address = 0;
+
+        // Add processes with memory allocated successfully to the ready queue
+        if (is_best_fit) {
+            alloc_address = best_fit_alloc(memory_blocks_ptr, candidate_process->memory_required);
+            if (alloc_address == -1) {
+                input_queue_index++;
+                continue;
+            }
+        }
+        candidate_process->memory_start = alloc_address;
+        if (is_SJF) {
+            insert_process_SJF(ready_queue, candidate_process);
+        } else {
+            enqueue(ready_queue, candidate_process);
+        }
+        printf("%d,READY,process_name=%s,assigned_at=%d\n", curr_time, candidate_process->process_name, alloc_address);
+        dequeue(input_queue, input_queue_index);
+    }
+}
+
+
+/* Simulate the Shortest Job First algorithm and return makespan */
 int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock *memory_blocks, int is_best_fit) {
     int curr_time = 0;
     int completed_processes = 0;
@@ -57,51 +111,9 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
 
         // Perform the following tasks only at the start of each cycle
         if (!(curr_time % quantum)) {
-            // Identify whether the currently running process (if any) has completed
-            if (running_process != NULL && running_process->remaining_time <= 0) {
-                // Terminate and deallocate memory
-                running_process->completion_time = curr_time;
-                completed_processes++;
-                printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, running_process->process_name, last_arrival_index - completed_processes);
-
-                // Deallocate memory
-                if (is_best_fit) {
-                    dealloc(memory_blocks, running_process->memory_start);
-                }
-                running_process = NULL;
-            }
-
-            // Add all arrived process to input queue
-            while (last_arrival_index < num_processes && processes[last_arrival_index].arrival_time <= curr_time) {
-                enqueue(input_queue, &processes[last_arrival_index]);
-                last_arrival_index++;
-            }
-
-            if (is_best_fit) {
-                // Attempt to allocate memory to all process in input queue
-                int input_queue_index = input_queue->front;
-                while (input_queue_index <= input_queue->rear) {
-                    Process *candidate_process = input_queue->process_array[input_queue_index];
-                    int alloc_address = best_fit_alloc(&memory_blocks, candidate_process->memory_required);
-
-                    // Add processes with memory allocated successfully to the ready queue
-                    if (alloc_address != -1) {
-                        candidate_process->memory_start = alloc_address;
-                        insert_process_SJF(ready_queue, candidate_process);
-                        printf("%d,READY,process_name=%s,assigned_at=%d\n", curr_time, candidate_process->process_name, alloc_address);
-                        dequeue(input_queue, input_queue_index);
-                    } else {
-                        input_queue_index++;
-                    }
-                }
-            } else {
-                // Move all processes in the input queue to the ready queue
-                while (input_queue->front <= input_queue->rear) {
-                    Process *candidate_process = pop(input_queue);
-                    insert_process_SJF(ready_queue, candidate_process);
-                    printf("%d,READY,process_name=%s,assigned_at=%d\n", curr_time, candidate_process->process_name, 0);
-                }
-            }
+            terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, memory_blocks, is_best_fit);
+            enqueue_input_queue(processes, num_processes, curr_time, &last_arrival_index, input_queue);
+            enqueue_ready_queue(input_queue, ready_queue, &memory_blocks, is_best_fit, curr_time, 1);
 
             // Start a new READY process if there are no running process
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
@@ -121,8 +133,8 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
 }
 
 
-// Simulate the Round Robin algorithm and return makespan
-int simulate_RR(Process *processes, int num_processes, int quantum) {
+/* Simulate the Round Robin algorithm and return makespan */
+int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock *memory_blocks, int is_best_fit) {
     int curr_time = 0;
     int completed_processes = 0;
     int last_arrival_index = 0;
@@ -135,21 +147,9 @@ int simulate_RR(Process *processes, int num_processes, int quantum) {
 
         // Perform the following tasks only at the start of each cycle
         if (!(curr_time % quantum)) {
-            // Identify whether the currently running process (if any) has completed.
-            if (running_process != NULL && running_process->remaining_time <= 0) {
-                // Terminate and deallocate memory
-                running_process->completion_time = curr_time;
-                completed_processes++;
-                printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, running_process->process_name, last_arrival_index - completed_processes);
-                running_process = NULL;
-            }
-
-            // Add all arrived process to input queue and ready queue
-            while (last_arrival_index < num_processes && processes[last_arrival_index].arrival_time <= curr_time) {
-                enqueue(input_queue, &processes[last_arrival_index]);
-                enqueue(ready_queue, &processes[last_arrival_index]);
-                last_arrival_index++;
-            }
+            terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, memory_blocks, is_best_fit);
+            enqueue_input_queue(processes, num_processes, curr_time, &last_arrival_index, input_queue);
+            enqueue_ready_queue(input_queue, ready_queue, &memory_blocks, is_best_fit, curr_time, 0);
 
             // If the process requires more CPU time and there are other READY processes, the process
             // is suspended and enters the READY state again to await more CPU time.

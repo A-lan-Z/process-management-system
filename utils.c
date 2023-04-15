@@ -4,6 +4,7 @@
 
 #include "utils.h"
 
+
 /* Custom round-half-up function */
 double round_half_up(double num, int precision) {
     double factor = 1;
@@ -13,6 +14,7 @@ double round_half_up(double num, int precision) {
 
     return (int)(num * factor + 0.5) / factor;
 }
+
 
 /* Initialise a queue and allocate memory */
 Queue *init_queue(int num_processes) {
@@ -31,11 +33,13 @@ Queue *init_queue(int num_processes) {
     return queue;
 }
 
+
 /* Enqueue a process to the end of the queue */
 void enqueue(Queue *queue, Process *process) {
     queue->rear++;
     queue->process_array[queue->rear] = process;
 }
+
 
 /* Dequeue a process at given index */
 void dequeue(Queue *queue, int index) {
@@ -57,15 +61,20 @@ void dequeue(Queue *queue, int index) {
     }
 }
 
+
 /* Dequeue the first process from the input queue */
 Process *pop(Queue *ready_queue) {
     if (ready_queue->front > ready_queue->rear) {
         return NULL;
     }
     Process *p = ready_queue->process_array[ready_queue->front];
-    ready_queue->front++;
+    for (int i = ready_queue->front; i < ready_queue->rear; i++) {
+        ready_queue->process_array[i] = ready_queue->process_array[i + 1];
+    }
+    ready_queue->rear--;
     return p;
 }
+
 
 /* Helper function to read input into correct format */
 int read_input(const char *file_path, Process **processes_ptr) {
@@ -98,6 +107,7 @@ int read_input(const char *file_path, Process **processes_ptr) {
     return num_processes;
 }
 
+
 /* Helper function to parse command line arguments */
 void parse_arg(int argc, char **argv, Arguments *args) {
     int opt;
@@ -126,6 +136,7 @@ void parse_arg(int argc, char **argv, Arguments *args) {
     }
 }
 
+
 /* Helper function to print performance matrix */
 void performance_matrix(Process *processes, int num_processes, int makespan) {
     double total_turnaround_time = 0;
@@ -149,7 +160,7 @@ void performance_matrix(Process *processes, int num_processes, int makespan) {
     max_overhead = round_half_up(max_overhead, 2);
     avg_overhead = round_half_up(avg_overhead, 2);
 
-
+    // Print performance matrix
     printf("Turnaround time %d\n", avg_turnaround_time);
     printf("Time overhead %.2f %.2f\n", max_overhead, avg_overhead);
     printf("Makespan %d\n", makespan);

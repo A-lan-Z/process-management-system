@@ -47,8 +47,8 @@ void update_adj_blocks(MemoryBlock *memory_block) {
 
 
 /* Allocate memory of required size with best fit algorithm */
-int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required) {
-    MemoryBlock *best_fit_block = find_best_fit(*memory_blocks, memory_required);
+int best_fit_alloc(MemoryBlock **memory_blocks_ptr, int memory_required) {
+    MemoryBlock *best_fit_block = find_best_fit(*memory_blocks_ptr, memory_required);
 
     // Return fail if no suitable memory block found
     if (!best_fit_block) {return -1;}
@@ -76,7 +76,7 @@ int best_fit_alloc(MemoryBlock **memory_blocks, int memory_required) {
 
     // Update the head of list if required
     if (!allocated_block->prev) {
-        *memory_blocks = allocated_block;
+        *memory_blocks_ptr = allocated_block;
     }
 
     return allocated_block->start_address;

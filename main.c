@@ -2,6 +2,7 @@
 // Created by alanz on 4/13/23.
 //
 
+#include <string.h>
 #include "main.h"
 #include "utils.h"
 #include "process_manager.h"
@@ -39,7 +40,8 @@ int main(int argc, char **argv) {
     /********************************************************************************/
     /**                               Simulate SJF                                 **/
     /********************************************************************************/
-    int makespan = simulate_SJF(processes, num_processes, args.quantum, memory_blocks, 1);
+    int is_best_fit = strcmp(args.memory_strategy, "best-fit") ? 0 : 1;
+    int makespan = simulate_SJF(processes, num_processes, args.quantum, memory_blocks, is_best_fit);
     performance_matrix(processes, num_processes, makespan);
 
     return 0;
