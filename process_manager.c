@@ -4,6 +4,7 @@
 
 #include "process_manager.h"
 #include "utils.h"
+#include "memory.h"
 #include <string.h>
 
 
@@ -43,7 +44,7 @@ void insert_process_SJF(Queue *ready_queue, Process *process) {
 
 
 // Simulate the Shortest Job First algorithm and return makespan
-int simulate_SJF(Process *processes, int num_processes, int quantum) {
+int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock *memory_blocks, int is_best_fit) {
     int curr_time = 0;
     int completed_processes = 0;
     int last_arrival_index = 0;
@@ -56,22 +57,42 @@ int simulate_SJF(Process *processes, int num_processes, int quantum) {
 
         // Perform the following tasks only at the start of each cycle
         if (!(curr_time % quantum)) {
-            // Identify whether the currently running process (if any) has completed.
+            // Identify whether the currently running process (if any) has completed
             if (running_process != NULL && running_process->remaining_time <= 0) {
                 // Terminate and deallocate memory
                 running_process->completion_time = curr_time;
                 completed_processes++;
                 printf("%d,FINISHED,process_name=%s,proc_remaining=%d\n", curr_time, running_process->process_name, last_arrival_index - completed_processes);
+
+                // Deallocate memory
+                if (is_best_fit) {
+                    dealloc(memory_blocks, running_process->memory_start);
+                }
                 running_process = NULL;
             }
 
             // Add all arrived process to input queue
             while (last_arrival_index < num_processes && processes[last_arrival_index].arrival_time <= curr_time) {
                 enqueue(input_queue, &processes[last_arrival_index]);
-                // Enqueue all processes in input queue to ready queue in ascending service time
-                insert_process_SJF(ready_queue, &processes[last_arrival_index]);
                 last_arrival_index++;
             }
+
+            // Attempt to allocate memory to all process in input queue
+            int input_queue_index = input_queue->front;
+            while (input_queue_index <= input_queue->rear) {
+                Process *candidate_process = input_queue->process_array[input_queue_index];
+                int alloc_address = best_fit_alloc(memory_blocks, candidate_process->memory_required);
+
+                // Add processes with memory allocated successfully to the ready queue
+                if (alloc_address != -1) {
+                    candidate_process->memory_start = alloc_address;
+                    insert_process_SJF(ready_queue, candidate_process);
+                    dequeue(input_queue, input_queue_index);
+                } else {
+                    input_queue_index++;
+                }
+            }
+            insert_process_SJF(ready_queue, &processes[last_arrival_index]);
 
             // Start a new READY process if there are no running process
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {

@@ -5,6 +5,7 @@
 #include "main.h"
 #include "utils.h"
 #include "process_manager.h"
+#include "memory.h"
 
 #define TOTAL_MEMORY_SIZE 2048
 
@@ -17,6 +18,7 @@ int main(int argc, char **argv) {
     Process *processes = NULL;
     parse_arg(argc, argv, &args);
     int num_processes = read_input(args.filename, &processes);
+    MemoryBlock *memory_blocks = init_memory(TOTAL_MEMORY_SIZE);
 
     printf("Filename: %s\n", args.filename);
     printf("Scheduler: %s\n", args.scheduler);
@@ -37,7 +39,7 @@ int main(int argc, char **argv) {
     /********************************************************************************/
     /**                               Simulate SJF                                 **/
     /********************************************************************************/
-    int makespan = simulate_RR(processes, num_processes, args.quantum);
+    int makespan = simulate_SJF(processes, num_processes, args.quantum, memory_blocks, 0);
     performance_matrix(processes, num_processes, makespan);
 
     return 0;

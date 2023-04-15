@@ -6,6 +6,7 @@
 #define COMP30023_2023_PROJECT_1_MAIN_H
 
 #include "utils.h"
+#include "memory.h"
 
 int main(int argc, char **argv);
 

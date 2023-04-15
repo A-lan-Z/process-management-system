@@ -46,6 +46,9 @@ Queue *init_queue(int num_processes);
 /* Enqueue a process to the end of the queue */
 void enqueue(Queue *queue, Process *process);
 
+/* Dequeue a process at given index */
+void dequeue(Queue *queue, int index);
+
 /* Dequeue the first process from the input queue */
 Process *pop(Queue *ready_queue);
 

@@ -26,7 +26,7 @@ Queue *init_queue(int num_processes) {
         perror("Error allocating memory for process array");
         exit(EXIT_FAILURE);
     }
-    queue->front = -1;
+    queue->front = 0;
     queue->rear = -1;
     return queue;
 }
@@ -35,10 +35,25 @@ Queue *init_queue(int num_processes) {
 void enqueue(Queue *queue, Process *process) {
     queue->rear++;
     queue->process_array[queue->rear] = process;
+}
 
-    // Update front when queue was empty
-    if (queue->front == -1) {
+/* Dequeue a process at given index */
+void dequeue(Queue *queue, int index) {
+    if (index < queue->front || index > queue->rear) {
+        perror("Error: Index out of bounds");
+        exit(EXIT_FAILURE);
+    }
+
+    if (queue->front == queue->rear) {
+        // If only one process in the queue, reset it to empty
         queue->front = 0;
+        queue->rear = -1;
+    } else {
+        // Shift elements to the right to fill the gap
+        for (int i = index; i < queue->rear; i++) {
+            queue->process_array[i] = queue->process_array[i + 1];
+        }
+        queue->rear--;
     }
 }
 
