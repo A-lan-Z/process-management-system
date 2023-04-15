@@ -84,6 +84,7 @@ void enqueue_ready_queue(Queue *input_queue, Queue *ready_queue, MemoryBlock **m
                 input_queue_index++;
                 continue;
             }
+            printf("%d,READY,process_name=%s,assigned_at=%d\n", curr_time, candidate_process->process_name, alloc_address);
         }
         candidate_process->memory_start = alloc_address;
         if (is_SJF) {
@@ -91,7 +92,6 @@ void enqueue_ready_queue(Queue *input_queue, Queue *ready_queue, MemoryBlock **m
         } else {
             enqueue(ready_queue, candidate_process);
         }
-        printf("%d,READY,process_name=%s,assigned_at=%d\n", curr_time, candidate_process->process_name, alloc_address);
         dequeue(input_queue, input_queue_index);
     }
 }
