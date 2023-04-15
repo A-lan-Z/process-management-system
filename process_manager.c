@@ -128,7 +128,12 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
         }
         curr_time++;
     }
+    
+    // Free all used memory
+    free(input_queue->process_array);
     free(ready_queue->process_array);
+    free(input_queue);
+    free(ready_queue);
     return curr_time - 1;
 }
 
@@ -171,6 +176,11 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
         }
         curr_time++;
     }
+
+    // Free all used memory
+    free(input_queue->process_array);
     free(ready_queue->process_array);
+    free(input_queue);
+    free(ready_queue);
     return curr_time - 1;
 }
