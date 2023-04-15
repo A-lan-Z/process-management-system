@@ -6,6 +6,8 @@
 #include "utils.h"
 #include "process_manager.h"
 
+#define TOTAL_MEMORY_SIZE 2048
+
 int main(int argc, char **argv) {
 
     /********************************************************************************/

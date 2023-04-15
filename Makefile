@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-OBJFILES = main.o utils.o process_manager.o
+OBJFILES = main.o utils.o process_manager.o memory.o
 
 all: allocate
 
@@ -16,6 +16,9 @@ utils.o: utils.c
 
 process_manager.o: process_manager.c
 	$(CC) $(CFLAGS) -c process_manager.c
+
+memory.o: memory.c
+	$(CC) $(CFLAGS) -c memory.c
 
 .PHONY: clean
 

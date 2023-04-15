@@ -20,7 +20,6 @@ typedef struct Process {
     int completion_time;
     int memory_required;
     int memory_start;
-    int memory_end;
 } Process;
 
 /* Queue for storing the ready queue */
@@ -29,22 +28,6 @@ typedef struct Queue {
     int front;
     int rear;
 } Queue;
-
-/* Data structure to simulate memory blocks */
-typedef struct MemoryBlock {
-    int block_id;
-    int start_address;
-    int end_address;
-    int size;
-    int process_id;
-} MemoryBlock;
-
-/* Data structure to simulate memory system */
-typedef struct Memory {
-    int size;
-    int remaining_size;
-    MemoryBlock **block_array;
-} Memory;
 
 /* Data structure to store command line arguments */
 typedef struct Arguments{
