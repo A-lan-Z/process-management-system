@@ -94,7 +94,7 @@ int read_input(const char *file_path, Process **processes_ptr) {
         Process p;
         if (fscanf(file, "%d%s%d%d", &p.arrival_time, p.process_name, &p.service_time, &p.memory_required) == 4) {
             p.remaining_time = p.service_time;
-            p.has_created = 0;
+            //p.has_created = 0;
             *processes_ptr = realloc(*processes_ptr, (num_processes + 1) * sizeof(Process));
             if (!(*processes_ptr)) {
                 perror("Error allocating memory for input queue");
