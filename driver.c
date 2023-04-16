@@ -8,6 +8,7 @@
 #include "process_manager.h"
 #include "memory.h"
 
+#define IMPLEMENTS_REAL_PROCESS
 #define TOTAL_MEMORY_SIZE 2048
 
 int main(int argc, char **argv) {
