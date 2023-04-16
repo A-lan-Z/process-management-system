@@ -114,7 +114,7 @@ int create_real_process(Process *process, int curr_time, int *pipe_in, int *pipe
         dup2(pipe_out[1], STDOUT_FILENO);
 
         // Execute an instance of process
-        execl("./process", "process", "-v", process->process_name, NULL);
+        execl("./process", "process", process->process_name, NULL);
 
         perror("excel");
         exit(EXIT_FAILURE);
@@ -128,10 +128,10 @@ int create_real_process(Process *process, int curr_time, int *pipe_in, int *pipe
         uint32_t big_endian_time = htonl(curr_time);
         write(pipe_in[1], &big_endian_time, sizeof(big_endian_time));
 
-        // Read and verify byte from process
+        // Read and verify last byte from process
         uint8_t last_byte;
         read(pipe_out[0], &last_byte, sizeof(last_byte));
-        if (last_byte != (big_endian_time >> 24) & 0xFF) {
+        if (last_byte != ((big_endian_time >> 24) & 0xFF)) {
             fprintf(stderr, "Verification for last byte failed for process %s\n", process->process_name);
         }
         return pid;
@@ -143,7 +143,7 @@ int create_real_process(Process *process, int curr_time, int *pipe_in, int *pipe
 
 
 /* Helper function to suspend processes */
-void suspend_real_process(Process *process, int curr_time, int *pipe_in, int *pipe_out) {
+void suspend_real_process(Process *process, int curr_time, int *pipe_in) {
     // Send simulation time of suspend
     uint32_t  big_endian_time = htonl(curr_time);
     write(pipe_in[1], &big_endian_time, sizeof(big_endian_time));
@@ -151,9 +151,9 @@ void suspend_real_process(Process *process, int curr_time, int *pipe_in, int *pi
     // Send SIGTSTP signal to process, and wait for process to enter a stopped state
     kill(process->pid, SIGTSTP);
     int wstatus;
-    pid_t w = waitpid(process->pid, &wstatus, WUNTRACED);
+    waitpid(process->pid, &wstatus, WUNTRACED);
     while (!WIFSTOPPED(wstatus)) {
-        w = waitpid(process->pid, &wstatus, WUNTRACED);
+        waitpid(process->pid, &wstatus, WUNTRACED);
     }
 }
 
@@ -168,7 +168,7 @@ void resume_real_process(Process *process, int curr_time, int *pipe_in, int *pip
     kill(process->pid, SIGCONT);
     uint8_t last_byte;
     read(pipe_out[0], &last_byte, sizeof(last_byte));
-    if (last_byte != (uint8_t)big_endian_time) {
+    if (last_byte != ((big_endian_time >> 24) & 0xFF)) {
         fprintf(stderr, "Verification for last byte failed for process %s\n", process->process_name);
     }
 }
@@ -211,8 +211,12 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
                 char *temp_name = running_process->process_name;
 
                 // Terminate real process and then simulated process
-                terminate_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out, byte_string);
-                terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr, is_best_fit);
+                terminate_real_process(running_process, curr_time, running_process->pipe_in,
+                                       running_process->pipe_out,
+                                       byte_string);
+                terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes,
+                                  *memory_blocks_ptr,
+                                  is_best_fit);
                 printf("%d,FINISHED-PROCESS,process_name=%s,sha=%s\n", curr_time, temp_name, byte_string);
             }
 
@@ -220,11 +224,13 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
             enqueue_input_queue(processes, num_processes, curr_time, &last_arrival_index, input_queue);
             enqueue_ready_queue(input_queue, ready_queue, memory_blocks_ptr, is_best_fit, curr_time, 1);
 
-            // Start a new READY process if there are no running process
+            // Start a new READY process if there are no running process or resume process already running
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
                 running_process = pop(ready_queue);
                 running_process->pid = create_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out);
                 printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name, running_process->remaining_time);
+            } else if (running_process != NULL) {
+                resume_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out);
             }
         }
 
