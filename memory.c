@@ -5,7 +5,7 @@
 #include "memory.h"
 
 
-/* Initialise memory system */
+/* Helper function to initialise memory system */
 MemoryBlock *init_memory(int tot_mem_size) {
     MemoryBlock *memory_blocks = (MemoryBlock *)malloc(sizeof(MemoryBlock));
     memory_blocks->start_address = 0;
@@ -26,6 +26,8 @@ MemoryBlock *find_best_fit(MemoryBlock *memory_blocks, int memory_required) {
     while (curr_block) {
         if (curr_block->is_free && curr_block->size >= memory_required) {
             if (!best_fit_block || curr_block->size < best_fit_block->size) {
+                // Update the best_fit_block is no best_fit_block is found or
+                // curr_block has a smaller size
                 best_fit_block = curr_block;
             }
         }
@@ -59,6 +61,7 @@ int best_fit_alloc(MemoryBlock **memory_blocks_ptr, int memory_required) {
     allocated_block->size = memory_required;
     allocated_block->is_free = 0;
     allocated_block->prev = best_fit_block->prev;
+
     // Update best fit block to be the remaining block
     best_fit_block->start_address += memory_required;
     best_fit_block->size -= memory_required;

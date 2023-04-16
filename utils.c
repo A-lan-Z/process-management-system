@@ -34,7 +34,7 @@ Queue *init_queue(int num_processes) {
 }
 
 
-/* Enqueue a process to the end of the queue */
+/* Enqueue a process to the end */
 void enqueue(Queue *queue, Process *process) {
     queue->rear++;
     queue->process_array[queue->rear] = process;
@@ -53,7 +53,7 @@ void dequeue(Queue *queue, int index) {
         queue->front = 0;
         queue->rear = -1;
     } else {
-        // Shift elements to the right to fill the gap
+        // Shift elements to the left to fill the gap
         for (int i = index; i < queue->rear; i++) {
             queue->process_array[i] = queue->process_array[i + 1];
         }
@@ -68,6 +68,7 @@ Process *pop(Queue *ready_queue) {
         return NULL;
     }
     Process *p = ready_queue->process_array[ready_queue->front];
+    // Shift elements to the left to fill the gap
     for (int i = ready_queue->front; i < ready_queue->rear; i++) {
         ready_queue->process_array[i] = ready_queue->process_array[i + 1];
     }
@@ -144,6 +145,7 @@ void performance_matrix(Process *processes, int num_processes, int makespan) {
     double total_overhead = 0;
     double max_overhead = 0;
 
+    // Calculate performance matrix
     for (int i = 0; i < num_processes; i++) {
         int turnaround_time = processes[i].completion_time - processes[i].arrival_time;
         double overhead = (double)turnaround_time / processes[i].service_time;

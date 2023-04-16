@@ -3,15 +3,9 @@
 //
 
 #include "process_manager.h"
-#include "utils.h"
-#include "memory.h"
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <stdint.h>
 #include <netinet/in.h>
 
 
@@ -27,21 +21,13 @@ void insert_process_SJF(Queue *ready_queue, Process *process) {
     int i;
     for (i = ready_queue->rear; i >= ready_queue->front; i--) {
         Process *curr_process = ready_queue->process_array[i];
-        // Insert in ascending order of service time
-        if (curr_process->service_time < process->service_time) {
+        // Insert in ascending order of service time, arrival time, and process name
+        if (curr_process->service_time < process->service_time ||
+            (curr_process->service_time == process->service_time &&
+             (curr_process->arrival_time < process->arrival_time ||
+              (curr_process->arrival_time == process->arrival_time &&
+               strcmp(curr_process->process_name, process->process_name) < 0)))) {
             break;
-        }
-        // If equal service time, insert in ascending order of arrival time
-        if (curr_process->service_time == process->service_time) {
-            if (curr_process->arrival_time < process->arrival_time) {
-                break;
-            }
-            // If equal arrival time, insert in ascending order of process name
-            if (curr_process->arrival_time == process->arrival_time) {
-                if (strcmp(curr_process->process_name, process->process_name) < 0) {
-                    break;
-                }
-            }
         }
         ready_queue->process_array[i + 1] = ready_queue->process_array[i];
     }
@@ -211,12 +197,8 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
                 char *temp_name = running_process->process_name;
 
                 // Terminate real process and then simulated process
-                terminate_real_process(running_process, curr_time, running_process->pipe_in,
-                                       running_process->pipe_out,
-                                       byte_string);
-                terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes,
-                                  *memory_blocks_ptr,
-                                  is_best_fit);
+                terminate_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out, byte_string);
+                terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr, is_best_fit);
                 printf("%d,FINISHED-PROCESS,process_name=%s,sha=%s\n", curr_time, temp_name, byte_string);
             }
 
@@ -275,11 +257,8 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
                 char *temp_name = running_process->process_name;
 
                 // Terminate real process and then simulated process
-                terminate_real_process(running_process, curr_time, running_process->pipe_in,
-                                       running_process->pipe_out,
-                                       byte_string);
-                terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr,
-                                  is_best_fit);
+                terminate_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out, byte_string);
+                terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr, is_best_fit);
                 printf("%d,FINISHED-PROCESS,process_name=%s,sha=%s\n", curr_time, temp_name, byte_string);
             }
 
@@ -301,20 +280,16 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
                 running_process = pop(ready_queue);
                 if (!running_process->has_created) {
                     // Create a new real process
-                    running_process->pid = create_real_process(running_process, curr_time, running_process->pipe_in,
-                                                               running_process->pipe_out);
+                    running_process->pid = create_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out);
                     running_process->has_created = 1;
                 } else {
                     // Resume the real process
-                    resume_real_process(running_process, curr_time, running_process->pipe_in,
-                                        running_process->pipe_out);
+                    resume_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out);
                 }
-                printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name,
-                       running_process->remaining_time);
+                printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name, running_process->remaining_time);
             } else if (running_process != NULL) {
                 // There are only one process in the ready queue
-                resume_real_process(running_process, curr_time, running_process->pipe_in,
-                                    running_process->pipe_out);
+                resume_real_process(running_process, curr_time, running_process->pipe_in, running_process->pipe_out);
             }
         }
 
