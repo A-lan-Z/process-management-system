@@ -259,30 +259,62 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
     Queue *ready_queue = init_queue(num_processes);
     Process *running_process = NULL;
 
+    // Initialise pipes for all processes
+    for (int i = 0; i < num_processes; i++) {
+        pipe(processes[i].pipe_in);
+        pipe(processes[i].pipe_out);
+    }
+
     // Continue processing until all processes are completed
     while (completed_processes < num_processes) {
 
         // Perform the following tasks only at the start of each cycle
         if (!(curr_time % quantum)) {
             if (running_process != NULL && running_process->remaining_time <= 0) {
+                char byte_string[65] = {0};
+                char *temp_name = running_process->process_name;
+
+                // Terminate real process and then simulated process
+                terminate_real_process(running_process, curr_time, running_process->pipe_in,
+                                       running_process->pipe_out,
+                                       byte_string);
                 terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr,
                                   is_best_fit);
+                printf("%d,FINISHED-PROCESS,process_name=%s,sha=%s\n", curr_time, temp_name, byte_string);
             }
+
+            // Enqueue process to input queue and ready queue
             enqueue_input_queue(processes, num_processes, curr_time, &last_arrival_index, input_queue);
             enqueue_ready_queue(input_queue, ready_queue, memory_blocks_ptr, is_best_fit, curr_time, 0);
 
             // If the process requires more CPU time and there are other READY processes, the process
             // is suspended and enters the READY state again to await more CPU time.
             if (ready_queue->front <= ready_queue->rear && running_process != NULL) {
+                suspend_real_process(running_process, curr_time, running_process->pipe_in);
                 enqueue(ready_queue, running_process);
                 running_process = NULL;
             }
 
-            // Start a new READY process
+            // Start a new READY process or resume a suspended process
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
+                // Process the next process in ready queue
                 running_process = pop(ready_queue);
+                if (!running_process->has_created) {
+                    // Create a new real process
+                    running_process->pid = create_real_process(running_process, curr_time, running_process->pipe_in,
+                                                               running_process->pipe_out);
+                    running_process->has_created = 1;
+                } else {
+                    // Resume the real process
+                    resume_real_process(running_process, curr_time, running_process->pipe_in,
+                                        running_process->pipe_out);
+                }
                 printf("%d,RUNNING,process_name=%s,remaining_time=%d\n", curr_time, running_process->process_name,
                        running_process->remaining_time);
+            } else if (running_process != NULL) {
+                // There are only one process in the ready queue
+                resume_real_process(running_process, curr_time, running_process->pipe_in,
+                                    running_process->pipe_out);
             }
         }
 

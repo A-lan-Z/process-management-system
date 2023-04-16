@@ -23,6 +23,7 @@ typedef struct Process {
     pid_t pid;
     int pipe_in[2];
     int pipe_out[2];
+    int has_created;
 } Process;
 
 /* Queue for storing the ready queue */
