@@ -264,8 +264,10 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
 
         // Perform the following tasks only at the start of each cycle
         if (!(curr_time % quantum)) {
-            terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr,
-                              is_best_fit);
+            if (running_process != NULL && running_process->remaining_time <= 0) {
+                terminate_process(&running_process, curr_time, last_arrival_index, &completed_processes, *memory_blocks_ptr,
+                                  is_best_fit);
+            }
             enqueue_input_queue(processes, num_processes, curr_time, &last_arrival_index, input_queue);
             enqueue_ready_queue(input_queue, ready_queue, memory_blocks_ptr, is_best_fit, curr_time, 0);
 
