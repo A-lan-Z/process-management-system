@@ -6,6 +6,13 @@
 #include "utils.h"
 #include "memory.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdint.h>
+#include <netinet/in.h>
 
 
 // Insert a process into the ready queue in the order of SJF
@@ -97,6 +104,93 @@ void enqueue_ready_queue(Queue *input_queue, Queue *ready_queue, MemoryBlock **m
 }
 
 
+/* Helper function to execute real processes */
+int create_real_process(Process *process, int curr_time, int *pipe_in, int *pipe_out) {
+    pid_t pid;
+
+    if ((pid = fork()) == 0) {
+        // In child process; handle input output
+        close(pipe_in[1]);
+        close(pipe_out[0]);
+        dup2(pipe_in[0], STDIN_FILENO);
+        dup2(pipe_out[1], STDOUT_FILENO);
+
+        // Execute an instance of process
+        execl("./process", "process", "-v", process->process_name, NULL);
+
+        perror("excel");
+        exit(EXIT_FAILURE);
+
+    } else if (pid > 0) {
+        // In parent process; handle input output
+        close(pipe_in[0]);
+        close(pipe_out[1]);
+
+        // Send simulation time to process
+        uint32_t big_endian_time = htonl(curr_time);
+        write(pipe_in[1], &big_endian_time, sizeof(big_endian_time));
+
+        // Read and verify byte from process
+        uint8_t last_byte;
+        read(pipe_out[0], &last_byte, sizeof(last_byte));
+        if (last_byte != (uint8_t)big_endian_time) {
+            fprintf(stderr, "Verification for last byte failed for process %s\n", process->process_name);
+        }
+        return pid;
+    } else {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+/* Helper function to suspend processes */
+void suspend_real_process(Process *process, int curr_time, int *pipe_in, int *pipe_out) {
+    // Send simulation time of suspend
+    uint32_t  big_endian_time = htonl(curr_time);
+    write(pipe_in[1], &big_endian_time, sizeof(big_endian_time));
+
+    // Send SIGTSTP signal to process, and wait for process to enter a stopped state
+    kill(process->pid, SIGTSTP);
+    int wstatus;
+    pid_t w = waitpid(process->pid, &wstatus, WUNTRACED);
+    while (!WIFSTOPPED(wstatus)) {
+        w = waitpid(process->pid, &wstatus, WUNTRACED);
+    }
+}
+
+
+/* Helper function to resume processes */
+void resume_real_process(Process *process, int curr_time, int *pipe_in, int *pipe_out) {
+    // Send simulation time of resume
+    uint32_t  big_endian_time = htonl(curr_time);
+    write(pipe_in[1], &big_endian_time, sizeof(big_endian_time));
+
+    // Send SIGCONT signal to process, and verify last byte
+    kill(process->pid, SIGCONT);
+    uint8_t last_byte;
+    read(pipe_out[0], &last_byte, sizeof(last_byte));
+    if (last_byte != (uint8_t)big_endian_time) {
+        fprintf(stderr, "Verification for last byte failed for process %s\n", process->process_name);
+    }
+}
+
+
+/* Helper function to terminate processes and read verification byte string*/
+void *terminate_real_process(Process *process, int curr_time, int *pipe_in, int *pipe_out) {
+    // Send simulation time of terminate
+    uint32_t  big_endian_time = htonl(curr_time);
+    write(pipe_in[1], &big_endian_time, sizeof(big_endian_time));
+
+    // Send SIGTERM signal to process, and read 64 byte string
+    kill(process->pid, SIGTERM);
+    char byte_string[65] = {0};
+    read(pipe_out[0], byte_string, 64);
+    printf("%d,FINISHED-PROCESS,process_name=%s,sha=%s\n", curr_time, process->process_name, byte_string);
+
+}
+
+
 /* Simulate the Shortest Job First algorithm and return makespan */
 int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock **memory_blocks_ptr, int is_best_fit) {
     int curr_time = 0;
@@ -105,6 +199,12 @@ int simulate_SJF(Process *processes, int num_processes, int quantum, MemoryBlock
     Queue *input_queue = init_queue(num_processes);
     Queue *ready_queue = init_queue(num_processes);
     Process *running_process = NULL;
+
+    // Initialise pipes for all processes
+    for (int i = 0; i < num_processes; i++) {
+        pipe(processes[i].pipe_in);
+        pipe(processes[i].pipe_out);
+    }
 
     // Continue processing until all processes are completed
     while (completed_processes < num_processes) {

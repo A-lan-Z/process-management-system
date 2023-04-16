@@ -20,6 +20,9 @@ typedef struct Process {
     int completion_time;
     int memory_required;
     int memory_start;
+    pid_t pid;
+    int pipe_in[2];
+    int pipe_out[2];
 } Process;
 
 /* Queue for storing the ready queue */
