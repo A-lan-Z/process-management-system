@@ -299,11 +299,11 @@ int simulate_RR(Process *processes, int num_processes, int quantum, MemoryBlock 
             if (ready_queue->front <= ready_queue->rear && running_process == NULL) {
                 // Process the next process in ready queue
                 running_process = pop(ready_queue);
-                if (!running_process) {
+                if (!running_process->has_created) {
                     // Create a new real process
                     running_process->pid = create_real_process(running_process, curr_time, running_process->pipe_in,
                                                                running_process->pipe_out);
-                    // running_process->has_created = 1;
+                    running_process->has_created = 1;
                 } else {
                     // Resume the real process
                     resume_real_process(running_process, curr_time, running_process->pipe_in,
